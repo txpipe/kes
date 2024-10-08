@@ -1,7 +1,7 @@
 //! Structures common to all constructions of key evolving signatures
 use crate::errors::Error;
 use blake2::digest::{Update, VariableOutput};
-use blake2::VarBlake2b;
+use blake2::Blake2bVar;
 use ed25519_dalek as ed25519;
 use std::convert::TryInto;
 
@@ -68,11 +68,11 @@ impl PublicKey {
     /// Hash two public keys using Blake2b
     pub(crate) fn hash_pair(&self, other: &PublicKey) -> PublicKey {
         let mut out = [0u8; 32];
-        let mut h = VarBlake2b::new(32).expect("valid size");
-        h.update(self.0);
-        h.update(other.0);
+        let mut h = Blake2bVar::new(32).expect("valid size");
+        h.update(&self.0);
+        h.update(&other.0);
 
-        h.finalize_variable(|res| out.copy_from_slice(res));
+        h.finalize_variable(&mut out).expect("valid size");
         PublicKey(out)
     }
 }
@@ -94,13 +94,14 @@ impl Seed {
         let mut left_seed = [0u8; Self::SIZE];
         let mut right_seed = [0u8; Self::SIZE];
 
-        let mut hasher = VarBlake2b::new(32).expect("valid size");
-        hasher.update([1]);
-        hasher.update(&bytes);
-        hasher.finalize_variable_reset(|out| left_seed.copy_from_slice(out));
-        hasher.update([2]);
-        hasher.update(&bytes);
-        hasher.finalize_variable_reset(|out| right_seed.copy_from_slice(out));
+        let mut hasher = Blake2bVar::new(32).expect("valid size");
+        hasher.update(&[1]);
+        hasher.update(bytes);
+        hasher.finalize_variable(&mut left_seed).expect("valid size");
+        let mut hasher = Blake2bVar::new(32).expect("valid size");
+        hasher.update(&[2]);
+        hasher.update(bytes);
+        hasher.finalize_variable(&mut right_seed).expect("valid size");
 
         bytes.copy_from_slice(&[0u8; Self::SIZE]);
 
