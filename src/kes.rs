@@ -13,6 +13,7 @@ use std::cmp::Ordering;
 
 #[cfg(feature = "serde_enabled")]
 use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 macro_rules! sum_kes {
     ($name:ident, $signame:ident, $sk:ident, $sigma:ident, $depth:expr, $doc:expr) => {
@@ -31,7 +32,7 @@ macro_rules! sum_kes {
 
         impl<'a> Drop for $name<'a> {
             fn drop(&mut self) {
-                self.0.copy_from_slice(&[0u8; Self::SIZE + 4])
+                self.0.zeroize();
             }
         }
 

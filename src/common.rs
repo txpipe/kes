@@ -97,11 +97,15 @@ impl Seed {
         let mut hasher = Blake2bVar::new(32).expect("valid size");
         hasher.update(&[1]);
         hasher.update(bytes);
-        hasher.finalize_variable(&mut left_seed).expect("valid size");
+        hasher
+            .finalize_variable(&mut left_seed)
+            .expect("valid size");
         let mut hasher = Blake2bVar::new(32).expect("valid size");
         hasher.update(&[2]);
         hasher.update(bytes);
-        hasher.finalize_variable(&mut right_seed).expect("valid size");
+        hasher
+            .finalize_variable(&mut right_seed)
+            .expect("valid size");
 
         bytes.copy_from_slice(&[0u8; Self::SIZE]);
 
