@@ -3,10 +3,10 @@ use crate::errors::Error;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use ed25519_dalek as ed25519;
-use std::convert::TryInto;
-
 #[cfg(feature = "serde_enabled")]
 use serde::{Deserialize, Serialize};
+use std::convert::TryInto;
+use std::fmt;
 
 /// ED25519 secret key size
 pub const INDIVIDUAL_SECRET_SIZE: usize = 32;
@@ -144,5 +144,11 @@ impl Depth {
 impl PartialEq for Depth {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
+    }
+}
+
+impl fmt::Display for Depth {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
