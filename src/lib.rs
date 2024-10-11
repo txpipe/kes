@@ -43,7 +43,7 @@
 //! of the Merkle tree.
 
 mod common;
-mod errors;
+pub mod errors;
 pub mod kes;
 mod single_kes;
 pub mod traits;
