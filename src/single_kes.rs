@@ -27,7 +27,7 @@ pub struct Sum0KesSig(
     #[cfg_attr(feature = "serde_enabled", serde_as(as = "Bytes"))] pub(crate) EdSignature,
 );
 
-impl<'a> Drop for Sum0Kes<'a> {
+impl Drop for Sum0Kes<'_> {
     fn drop(&mut self) {
         self.0.copy_from_slice(&[0u8; Self::SIZE + 4])
     }
@@ -176,7 +176,7 @@ pub struct Sum0CompactKesSig(
     pub(crate) EdPublicKey,
 );
 
-impl<'a> Drop for Sum0CompactKes<'a> {
+impl Drop for Sum0CompactKes<'_> {
     fn drop(&mut self) {
         self.0.copy_from_slice(&[0u8; Self::SIZE + 4])
     }
