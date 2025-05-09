@@ -27,9 +27,16 @@ mod test {
 
     proptest! {
         #[test]
-        fn public_key_derivation_correct((mut sk_bytes,pk) in secret_public_key_bytes()) {
+        fn public_key_derivation_is_correct((mut sk_bytes,pk) in secret_public_key_bytes()) {
             let sk = Sum6Kes::from_bytes(&mut sk_bytes);
             prop_assert!(sk?.to_pk() == pk);
         }
+
+        #[test]
+        fn keys_are_always_different_if_seeds_are_different(((sk_bytes1,pk1), (sk_bytes2,pk2)) in (secret_public_key_bytes(), secret_public_key_bytes()) ) {
+            prop_assert!(sk_bytes1 != sk_bytes2);
+            prop_assert!(pk1 != pk2);
+        }
+
     }
 }
