@@ -2,6 +2,7 @@
 mod test {
 
     use kes_summed_ed25519::common::PublicKey;
+    use kes_summed_ed25519::errors::Error;
     use kes_summed_ed25519::kes::*;
     use kes_summed_ed25519::traits::{KesSig, KesSk};
 
@@ -65,6 +66,21 @@ mod test {
             let sk = Sum6Kes::from_bytes(&mut sk_bytes);
             let sig = sk?.sign(&msg);
             prop_assert!(sig.verify(0, &pk, &msg).is_ok());
+        }
+
+        #[test]
+        fn simple_verification_fails_for_other_msg(((mut sk_bytes,pk),msg1,msg2) in (secret_public_key_bytes(), payload(), payload())) {
+            let sk = Sum6Kes::from_bytes(&mut sk_bytes);
+            let sig = sk?.sign(&msg1);
+            let err_str = String::from("signature error: Verification equation was not satisfied");
+            prop_assert!(sig.verify(0, &pk, &msg2) == Err(Error::Ed25519Signature(err_str)));
+        }
+
+        #[test]
+        fn simple_verification_fails_for_other_pk(((mut sk_bytes,_pk),(mut _sk_bytes,pk),msg) in (secret_public_key_bytes(), secret_public_key_bytes(), payload())) {
+            let sk = Sum6Kes::from_bytes(&mut sk_bytes);
+            let sig = sk?.sign(&msg);
+            prop_assert!(sig.verify(0, &pk, &msg) == Err(Error::InvalidHashComparison));
         }
 
     }

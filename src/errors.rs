@@ -5,7 +5,7 @@ use crate::common::Depth;
 use ed25519_dalek as ed25519;
 use thiserror::Error;
 
-#[derive(Debug, Error, Clone)]
+#[derive(Debug, Error, PartialEq, Clone)]
 /// Enum of error associated with KES signatures
 pub enum Error {
     /// This error occurs when a base signature (ed25519) is invalid.
