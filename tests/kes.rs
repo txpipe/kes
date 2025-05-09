@@ -83,5 +83,27 @@ mod test {
             prop_assert!(sig.verify(0, &pk, &msg) == Err(Error::InvalidHashComparison));
         }
 
+        #[test]
+        fn one_update_behaves_correctly(((mut sk_bytes,pk),msg) in (secret_public_key_bytes(), payload())) {
+            let mut sk = Sum6Kes::from_bytes(&mut sk_bytes).unwrap();
+            let sig1 = sk.sign(&msg);
+            prop_assert!(sig1.verify(0, &pk, &msg).is_ok());
+
+            sk.update().unwrap();
+
+            //can always verify with the same pk signatures after update
+            let sig2 = sk.sign(&msg);
+            prop_assert!(sig2.verify(1, &pk, &msg).is_ok());
+            prop_assert!(sk.get_period() == 1);
+
+            //signatures from different periods of the same message are always different
+            prop_assert!(sig1 != sig2);
+
+            //cannot verify signature 2 with pk if period=0
+            let err_str = String::from("signature error: Verification equation was not satisfied");
+            prop_assert!(sig2.verify(0, &pk, &msg) == Err(Error::Ed25519Signature(err_str)));
+        }
+
+
     }
 }
