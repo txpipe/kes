@@ -104,6 +104,37 @@ mod test {
             prop_assert!(sig2.verify(0, &pk, &msg) == Err(Error::Ed25519Signature(err_str)));
         }
 
+        #[test]
+        fn n_update_behaves_correctly(((mut sk_bytes,pk),msg, n) in (secret_public_key_bytes(), payload(), 2u32..10)) {
+            let mut sk = Sum6Kes::from_bytes(&mut sk_bytes).unwrap();
+            let sig1 = sk.sign(&msg);
+            prop_assert!(sig1.verify(0, &pk, &msg).is_ok());
 
+            for _ in 0..n {
+                sk.update().unwrap();
+            }
+
+            //can always verify with the same pk signatures after n updates
+            let sig2 = sk.sign(&msg);
+            prop_assert!(sig2.verify(n, &pk, &msg).is_ok());
+            prop_assert!(sk.get_period() == n);
+
+            //signatures from different periods of the same message are always different
+            prop_assert!(sig1 != sig2);
+
+            //cannot verify signature 2 with pk if period=0...n-1
+            //TO_DO Is this error msg expected ???
+            for i in 0..n {
+                if n-i == 1 && n % 2 == 1 {
+                    let err_str = String::from("signature error: Verification equation was not satisfied");
+                    prop_assert!(sig2.verify(i, &pk, &msg) == Err(Error::Ed25519Signature(err_str)));
+                } else {
+                    prop_assert!(sig2.verify(i, &pk, &msg) == Err(Error::InvalidHashComparison));
+                }
+            }
+            //for i in 0..n {
+            //        prop_assert!(sig2.verify(i, &pk, &msg).is_err());
+            //}
+        }
     }
 }
