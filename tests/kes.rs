@@ -3,7 +3,7 @@ mod test {
 
     use kes_summed_ed25519::common::PublicKey;
     use kes_summed_ed25519::kes::*;
-    use kes_summed_ed25519::traits::KesSk;
+    use kes_summed_ed25519::traits::{KesSig, KesSk};
 
     use proptest::prelude::*;
 
@@ -36,6 +36,35 @@ mod test {
         fn keys_are_always_different_if_seeds_are_different(((sk_bytes1,pk1), (sk_bytes2,pk2)) in (secret_public_key_bytes(), secret_public_key_bytes()) ) {
             prop_assert!(sk_bytes1 != sk_bytes2);
             prop_assert!(pk1 != pk2);
+        }
+
+        #[test]
+        fn period_is_initially_always_zero((mut sk_bytes, _pk) in secret_public_key_bytes()) {
+            let sk = Sum6Kes::from_bytes(&mut sk_bytes);
+            prop_assert!(sk?.get_period() == 0);
+        }
+
+        #[test]
+        fn two_msgs_have_different_signature_with_one_skey(((mut sk_bytes,_pk),msg1,msg2) in (secret_public_key_bytes(), payload(),payload())) {
+            let mut sk_bytes1 = [0u8; Sum6Kes::SIZE + 4];
+            sk_bytes1.copy_from_slice(&sk_bytes);
+            let sk = Sum6Kes::from_bytes(&mut sk_bytes);
+            let sk_copied = Sum6Kes::from_bytes(&mut sk_bytes1);
+            prop_assert!(sk?.sign(&msg1) != sk_copied?.sign(&msg2));
+        }
+
+        #[test]
+        fn same_msg_have_different_signature_with_two_skey(((mut sk_bytes1,_pk1),(mut sk_bytes2,_pk2),msg) in (secret_public_key_bytes(), secret_public_key_bytes(),payload())) {
+            let sk1 = Sum6Kes::from_bytes(&mut sk_bytes1);
+            let sk2 = Sum6Kes::from_bytes(&mut sk_bytes2);
+            prop_assert!(sk1?.sign(&msg) != sk2?.sign(&msg));
+        }
+
+        #[test]
+        fn simple_verification_works(((mut sk_bytes,pk),msg) in (secret_public_key_bytes(), payload())) {
+            let sk = Sum6Kes::from_bytes(&mut sk_bytes);
+            let sig = sk?.sign(&msg);
+            prop_assert!(sig.verify(0, &pk, &msg).is_ok());
         }
 
     }
