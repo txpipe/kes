@@ -123,7 +123,6 @@ mod test {
             prop_assert!(sig1 != sig2);
 
             //cannot verify signature 2 with pk if period=0...n-1
-            //TO_DO Is this error msg expected ???
             for i in 0..n {
                 if n-i == 1 && n % 2 == 1 {
                     let err_str = String::from("signature error: Verification equation was not satisfied");
@@ -132,9 +131,6 @@ mod test {
                     prop_assert!(sig2.verify(i, &pk, &msg) == Err(Error::InvalidHashComparison));
                 }
             }
-            //for i in 0..n {
-            //        prop_assert!(sig2.verify(i, &pk, &msg).is_err());
-            //}
         }
     }
 }
