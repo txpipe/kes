@@ -21,6 +21,7 @@ thiserror = "1.0"
 
 [dev-dependencies]
 criterion = "0.5.1"
+proptest = "1.6"
 serde_json = "1"
 serde_cbor = "0.11.2"
 hex = "0.4.3"
