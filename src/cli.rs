@@ -187,7 +187,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 match Sum6Kes::from_bytes(&mut sk_bytes) {
                                     Ok(sk) => {
                                         let msg = msg_handle.fill_buf()?;
-                                        let signature = sk.sign(&msg);
+                                        let signature = sk.sign(msg);
                                         print!("{}", hex::encode(signature.to_bytes()));
                                     }
                                     _ => {
