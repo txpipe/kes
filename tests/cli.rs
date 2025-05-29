@@ -138,8 +138,66 @@ fn get_period_from_sk_is_zero_in_the_beginning() {
     Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(sk)
-        .arg("--period")
+        .arg("--get_period")
         .assert()
         .success()
         .stdout(is_zero);
+}
+
+#[test]
+fn sign_message_and_verify_the_resultant_signature() {
+    let mut random_bytes = [0u8; 32];
+    let _ = fill(&mut random_bytes[..]);
+    let mut seed_file = NamedTempFile::new().unwrap();
+    write!(seed_file, "{}", hex::encode(&random_bytes)).unwrap();
+    let seed_file_name = (*seed_file.path()).display().to_string();
+
+    let msg = String::from("the message to be encrypted").into_bytes();
+
+    let sk = Command::cargo_bin(PRG)
+        .unwrap()
+        .args(["--derive_sk", &seed_file_name])
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+
+    let mut sk_file = NamedTempFile::new().unwrap();
+    let sk_str = String::from_utf8(sk.clone()).expect("should be bytes from sk");
+    write!(sk_file, "{}", sk_str).unwrap();
+    let sk_file_name = (*sk_file.path()).display().to_string();
+
+    let pk = Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(sk)
+        .arg("--derive_pk")
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+
+    let mut pk_file = NamedTempFile::new().unwrap();
+    let pk_str = String::from_utf8(pk.clone()).expect("should be bytes from pk");
+    write!(pk_file, "{}", pk_str).unwrap();
+    let pk_file_name = (*pk_file.path()).display().to_string();
+
+    let sig = Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(msg.clone())
+        .args(["--sign", &sk_file_name])
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+
+    let printed_ok = predicate::str::is_match("^OK\n$").unwrap();
+    let sig_str = String::from_utf8(sig.clone()).expect("should be bytes from sig");
+
+    Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(msg)
+        .args(["--verify", &sig_str, &pk_file_name])
+        .assert()
+        .success()
+        .stdout(printed_ok);
 }
