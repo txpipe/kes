@@ -11,7 +11,10 @@ description = "Key Evolving Signature"
 keywords = ["Crypto", "KES", "Ed25519", "MMM", "Sum"]
 
 [dependencies]
+clap = "2.33"
 ed25519-dalek = { version = "2" }
+getrandom = { version = "0.3", features = ["std"] }
+hex = "0.4"
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_with = { version = "3.11.0", optional = true }
 rand_core = "0.6.4"
@@ -20,11 +23,15 @@ zeroize = "1.8.1"
 thiserror = "1.0"
 
 [dev-dependencies]
+assert_cmd = "2.0"
 criterion = "0.5.1"
+hex = "0.4.3"
+predicates = "3.1"
 proptest = "1.6"
 serde_json = "1"
 serde_cbor = "0.11.2"
-hex = "0.4.3"
+rand = "0.8"
+tempfile = "3.19.1"
 
 [features]
 default = []

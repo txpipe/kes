@@ -42,6 +42,7 @@
 //! other words, the number of individual hashes to be stored equals the depth
 //! of the Merkle tree.
 
+pub mod cli;
 pub mod common;
 pub mod errors;
 pub mod kes;
