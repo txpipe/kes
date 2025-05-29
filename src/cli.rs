@@ -381,9 +381,11 @@ pub fn get_args() -> CLIResult<Config> {
         )
         .arg(
             Arg::with_name("period")
+                .short("p")
                 .value_name("PERIOD")
                 .help("Number of updates a signing key experienced")
                 .multiple(false)
+                .takes_value(true)
                 .default_value("0"),
         )
         .get_matches();
