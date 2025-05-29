@@ -1,7 +1,8 @@
 //! CLI implementation using Sum6Kes implementation of KES
 
-use crate::kes::Sum6Kes;
-use crate::traits::KesSk;
+use crate::common::PublicKey;
+use crate::kes::{Sum6Kes, Sum6KesSig};
+use crate::traits::{KesSig, KesSk};
 
 use clap::{App, Arg};
 use std::error::Error;
@@ -31,6 +32,12 @@ pub enum Cmd {
 
     /// Sign msg from stdin using 612 bytes signing key read from file
     SignMsg,
+
+    /// Verify using public key (file) and proper period that the signature is indeed signed using the dual signing key
+    VerifySignature {
+        /// signature
+        signature: Vec<u8>,
+    },
 }
 
 /// Config captured that determines what is invoked in CLI
@@ -192,6 +199,45 @@ pub fn run(config: Config) -> CLIResult<()> {
                 },
             };
         }
+        Cmd::VerifySignature { signature } => {
+            match config.file {
+                None => {
+                    eprintln!("A signature must be provided in a file");
+                }
+                Some(pk_source) => match open_both(&pk_source) {
+                    Err(err) => {
+                        eprintln!("{}: {}", pk_source, err);
+                    }
+                    Ok((mut msg_handle, pk_handle)) => {
+                        let mut buffer = [0; 64];
+                        let mut handle = pk_handle.take(64);
+                        handle.read_exact(&mut buffer)?;
+                        match hex::decode(buffer) {
+                            Ok(bs) => {
+                                let mut pk_array = [0u8; 32];
+                                pk_array.copy_from_slice(&bs);
+                                let pk = PublicKey::from_bytes(&pk_array)?;
+                                let msg = msg_handle.fill_buf()?;
+                                let mut sig_array = [0u8; 448];
+                                sig_array.copy_from_slice(&signature);
+                                let sig = Sum6KesSig::from_bytes(&sig_array)?;
+                                match sig.verify(0, &pk, msg) {
+                                    Ok(()) => {
+                                        println!("OK");
+                                    }
+                                    _ => {
+                                        println!("Fail");
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                eprintln!("Decode error of the secret key: {}", err);
+                            }
+                        }
+                    }
+                },
+            };
+        }
     }
     Ok(())
 }
@@ -204,14 +250,12 @@ pub fn get_args() -> CLIResult<Config> {
         .about("Rust KES")
         .arg(
             Arg::with_name("generate_seed")
-                .short("s")
                 .long("generate_seed")
                 .help("Generate a 32-byte secret key")
                 .takes_value(false),
         )
         .arg(
             Arg::with_name("generate_sk")
-                .short("k")
                 .long("generate_sk")
                 .help("Generate a 612-byte signing key")
                 .conflicts_with("generate_seed")
@@ -219,35 +263,53 @@ pub fn get_args() -> CLIResult<Config> {
         )
         .arg(
             Arg::with_name("derive_sk")
-                .short("d")
                 .long("derive_sk")
                 .help("Derive a 612-byte signing key from a 32-byte secret seed (stdin/file)")
+                .conflicts_with("generate_seed")
                 .conflicts_with("generate_sk")
                 .takes_value(false),
         )
         .arg(
             Arg::with_name("derive_pk")
-                .short("p")
                 .long("derive_pk")
                 .help("Derive a 32-byte public key from a 612-byte signing key (stdin/file)")
+                .conflicts_with("generate_seed")
+                .conflicts_with("generate_sk")
                 .conflicts_with("derive_sk")
                 .takes_value(false),
         )
         .arg(
             Arg::with_name("get_period")
-                .short("t")
-                .long("period")
+                .long("get_period")
                 .help("Get period from a 612-byte signing key (stdin/file)")
+                .conflicts_with("generate_seed")
+                .conflicts_with("generate_sk")
+                .conflicts_with("derive_sk")
                 .conflicts_with("derive_pk")
                 .takes_value(false),
         )
         .arg(
             Arg::with_name("sign_msg")
-                .short("m")
                 .long("sign")
                 .help("Sign message (stdin) using a 612-byte signing key (file)")
+                .conflicts_with("generate_seed")
+                .conflicts_with("generate_sk")
+                .conflicts_with("derive_sk")
+                .conflicts_with("derive_pk")
                 .conflicts_with("get_period")
                 .takes_value(false),
+        )
+        .arg(
+            Arg::with_name("verify_sig")
+                .long("verify")
+                .help("Verified 64-byte signature using a message (stdin) and public key (file) for a given period")
+                .conflicts_with("generate_seed")
+                .conflicts_with("generate_sk")
+                .conflicts_with("derive_sk")
+                .conflicts_with("derive_pk")
+                .conflicts_with("get_period")
+                .conflicts_with("sign_msg")
+                .takes_value(true),
         )
         .arg(
             Arg::with_name("file")
@@ -292,6 +354,24 @@ pub fn get_args() -> CLIResult<Config> {
     } else if matches.is_present("sign_msg") {
         Config {
             cmd: Cmd::SignMsg,
+            file: matches
+                .values_of_lossy("file")
+                .map(|mut vec| vec.pop().unwrap()),
+        }
+    } else if matches.is_present("verify_sig") {
+        let signature_read = match hex::decode(
+            matches
+                .values_of_lossy("verify_sig")
+                .map(|mut vec| vec.pop().unwrap())
+                .unwrap(),
+        ) {
+            Ok(bs) if bs.len() == 448 => Ok(bs),
+            _ => Err("not valid signature"),
+        };
+        Config {
+            cmd: Cmd::VerifySignature {
+                signature: signature_read?,
+            },
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
