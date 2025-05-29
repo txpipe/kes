@@ -48,6 +48,7 @@ pub enum Cmd {
 pub struct Config {
     cmd: Cmd,
     file: Option<String>,
+    period: Option<u32>,
 }
 
 /// Determines and invokes Sum6Kes functions based on the parsed config
@@ -224,13 +225,18 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 let mut sig_array = [0u8; 448];
                                 sig_array.copy_from_slice(&signature);
                                 let sig = Sum6KesSig::from_bytes(&sig_array)?;
-                                match sig.verify(0, &pk, msg) {
-                                    Ok(()) => {
-                                        println!("OK");
+                                match config.period {
+                                    None => {
+                                        eprintln!("A period value should be available");
                                     }
-                                    _ => {
-                                        println!("Fail");
-                                    }
+                                    Some(p) => match sig.verify(p, &pk, msg) {
+                                        Ok(()) => {
+                                            println!("OK");
+                                        }
+                                        _ => {
+                                            println!("Fail");
+                                        }
+                                    },
                                 }
                             }
                             Err(err) => {
@@ -373,17 +379,26 @@ pub fn get_args() -> CLIResult<Config> {
                 .multiple(false)
                 .default_value("-"),
         )
+        .arg(
+            Arg::with_name("period")
+                .value_name("PERIOD")
+                .help("Number of updates a signing key experienced")
+                .multiple(false)
+                .default_value("0"),
+        )
         .get_matches();
 
     Ok(if matches.is_present("generate_seed") {
         Config {
             cmd: Cmd::GenerateSeed,
             file: None,
+            period: None,
         }
     } else if matches.is_present("generate_sk") {
         Config {
             cmd: Cmd::GenerateSk,
             file: None,
+            period: None,
         }
     } else if matches.is_present("derive_sk") {
         Config {
@@ -391,6 +406,7 @@ pub fn get_args() -> CLIResult<Config> {
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
+            period: None,
         }
     } else if matches.is_present("derive_pk") {
         Config {
@@ -398,6 +414,7 @@ pub fn get_args() -> CLIResult<Config> {
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
+            period: None,
         }
     } else if matches.is_present("get_period") {
         Config {
@@ -405,6 +422,7 @@ pub fn get_args() -> CLIResult<Config> {
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
+            period: None,
         }
     } else if matches.is_present("sign_msg") {
         Config {
@@ -412,6 +430,7 @@ pub fn get_args() -> CLIResult<Config> {
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
+            period: None,
         }
     } else if matches.is_present("verify_sig") {
         let signature_read = match hex::decode(
@@ -423,6 +442,16 @@ pub fn get_args() -> CLIResult<Config> {
             Ok(bs) if bs.len() == 448 => Ok(bs),
             _ => Err("not valid signature"),
         };
+        let period_match = matches
+            .values_of_lossy("period")
+            .map(|mut vec| vec.pop().unwrap());
+        let period_read = match period_match {
+            None => Ok(0),
+            Some(arg) => match arg.parse::<u32>() {
+                Ok(num) => Ok(num),
+                _ => Err("not valid period"),
+            },
+        };
         Config {
             cmd: Cmd::VerifySignature {
                 signature: signature_read?,
@@ -430,6 +459,7 @@ pub fn get_args() -> CLIResult<Config> {
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
+            period: Some(period_read?),
         }
     } else if matches.is_present("update_sk") {
         Config {
@@ -437,6 +467,7 @@ pub fn get_args() -> CLIResult<Config> {
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
+            period: None,
         }
     } else {
         panic!("wrong cmd")
