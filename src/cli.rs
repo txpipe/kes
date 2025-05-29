@@ -38,6 +38,9 @@ pub enum Cmd {
         /// signature
         signature: Vec<u8>,
     },
+
+    /// Increment period for a 612 bytes signing key (stdin) which result in the updated signing key
+    UpdateSk,
 }
 
 /// Config captured that determines what is invoked in CLI
@@ -238,6 +241,45 @@ pub fn run(config: Config) -> CLIResult<()> {
                 },
             };
         }
+        Cmd::UpdateSk => {
+            match config.file {
+                None => {
+                    eprintln!("No stdin or file was provided to read a signing key");
+                }
+                Some(sk_source) => match open_any(&sk_source) {
+                    Err(err) => {
+                        eprintln!("Failed to open {}: {}", sk_source, err);
+                    }
+                    Ok(sk_handle) => {
+                        let mut buffer = [0; 1224];
+                        let mut handle = sk_handle.take(1224);
+                        handle.read_exact(&mut buffer)?;
+                        match hex::decode(buffer) {
+                            Ok(bs) => {
+                                let mut sk_bytes = [0u8; 612];
+                                sk_bytes.copy_from_slice(&bs);
+                                match Sum6Kes::from_bytes(&mut sk_bytes) {
+                                    Ok(mut sk) => match sk.update() {
+                                        Ok(()) => {
+                                            print!("{}", hex::encode(sk.as_bytes()));
+                                        }
+                                        _ => {
+                                            eprintln!("Signing key failed to be updated");
+                                        }
+                                    },
+                                    _ => {
+                                        eprintln!("Signing key expects 612 bytes");
+                                    }
+                                };
+                            }
+                            Err(err) => {
+                                eprintln!("Decode error of the signing key: {}", err);
+                            }
+                        }
+                    }
+                },
+            };
+        }
     }
     Ok(())
 }
@@ -312,6 +354,19 @@ pub fn get_args() -> CLIResult<Config> {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("update_sk")
+                .long("update_sk")
+                .help("Increment period for a 612 bytes signing key (stdin/file) which result in the updated signing key")
+                .conflicts_with("generate_seed")
+                .conflicts_with("generate_sk")
+                .conflicts_with("derive_sk")
+                .conflicts_with("derive_pk")
+                .conflicts_with("get_period")
+                .conflicts_with("sign_msg")
+                .conflicts_with("verify_sig")
+                .takes_value(false),
+        )
+        .arg(
             Arg::with_name("file")
                 .value_name("FILE")
                 .help("Input file")
@@ -372,6 +427,13 @@ pub fn get_args() -> CLIResult<Config> {
             cmd: Cmd::VerifySignature {
                 signature: signature_read?,
             },
+            file: matches
+                .values_of_lossy("file")
+                .map(|mut vec| vec.pop().unwrap()),
+        }
+    } else if matches.is_present("update_sk") {
+        Config {
+            cmd: Cmd::UpdateSk,
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
