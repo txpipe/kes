@@ -43,7 +43,7 @@ fn correct_length_output_generate_signing_key() {
 }
 
 #[test]
-fn deriving_sk_seed_is_deterministic() {
+fn deriving_sk_from_seed_is_deterministic() {
     let mut random_bytes = [0u8; 32];
     let _ = fill(&mut random_bytes[..]);
     let mut seed = NamedTempFile::new().unwrap();
@@ -76,4 +76,44 @@ fn deriving_sk_seed_is_deterministic() {
     assert_eq!(sk1, sk2);
     // derivation is deterministic irrespective of file/stdin input
     assert_eq!(sk1, sk3);
+    // output is 1224 character hex, meaning 612-byte payload
+    assert_eq!(sk1.len(), 1224)
+}
+
+#[test]
+fn deriving_pk_from_sk_is_deterministic() {
+    let mut random_bytes = [0u8; 612];
+    let _ = fill(&mut random_bytes[..]);
+    let mut sk = NamedTempFile::new().unwrap();
+    write!(sk, "{}", hex::encode(&random_bytes)).unwrap();
+    let sk_file_name = (*sk.path()).display().to_string();
+
+    let pk1 = Command::cargo_bin(PRG)
+        .unwrap()
+        .args(["--derive_pk", &sk_file_name])
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+    let pk2 = Command::cargo_bin(PRG)
+        .unwrap()
+        .args(["--derive_pk", &sk_file_name])
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+    let pk3 = Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(hex::encode(&random_bytes))
+        .arg("--derive_pk")
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+    // derivation is deterministic if file input is used
+    assert_eq!(pk1, pk2);
+    // derivation is deterministic irrespective of file/stdin input
+    assert_eq!(pk1, pk3);
+    // output is 64 character hex, meaning 32-byte payload
+    assert_eq!(pk1.len(), 64)
 }
