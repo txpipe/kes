@@ -195,8 +195,49 @@ fn sign_message_and_verify_the_resultant_signature() {
 
     Command::cargo_bin(PRG)
         .unwrap()
-        .write_stdin(msg)
+        .write_stdin(msg.clone())
         .args(["--verify", &sig_str, &pk_file_name])
+        .assert()
+        .success()
+        .stdout(printed_ok.clone());
+
+    let sk1 = Command::cargo_bin(PRG)
+        .unwrap()
+        .args(["--update_sk", &sk_file_name])
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+
+    let mut sk1_file = NamedTempFile::new().unwrap();
+    let sk1_str = String::from_utf8(sk1.clone()).expect("should be bytes from sk");
+    write!(sk1_file, "{}", sk1_str).unwrap();
+    let sk1_file_name = (*sk1_file.path()).display().to_string();
+
+    let sig1 = Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(msg.clone())
+        .args(["--sign", &sk1_file_name])
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+
+    let printed_fail = predicate::str::is_match("^Fail\n$").unwrap();
+    let sig1_str = String::from_utf8(sig1.clone()).expect("should be bytes from sig");
+
+    Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(msg.clone())
+        .args(["--verify", &sig1_str, &pk_file_name])
+        .assert()
+        .success()
+        .stdout(printed_fail);
+
+    Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(msg)
+        .args(["--verify", &sig1_str, &pk_file_name, "-p", "1"])
         .assert()
         .success()
         .stdout(printed_ok);
