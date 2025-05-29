@@ -25,6 +25,9 @@ pub enum Cmd {
 
     /// Derives 32 bytes public key from 612 bytes signing key
     DerivePk,
+
+    /// Get period from 612 bytes signing key
+    GetPeriod,
 }
 
 /// Config captured that determines what is invoked in CLI
@@ -85,9 +88,9 @@ pub fn run(config: Config) -> CLIResult<()> {
                 None => {
                     eprintln!("No stdin or file was provided to read a signing key");
                 }
-                Some(seed_source) => match open_any(&seed_source) {
+                Some(sk_source) => match open_any(&sk_source) {
                     Err(err) => {
-                        eprintln!("Failed to open {}: {}", seed_source, err);
+                        eprintln!("Failed to open {}: {}", sk_source, err);
                     }
                     Ok(sk_handle) => {
                         let mut buffer = [0; 1224];
@@ -101,6 +104,41 @@ pub fn run(config: Config) -> CLIResult<()> {
                                     Ok(sk) => {
                                         let pk = sk.to_pk();
                                         print!("{}", hex::encode(pk.as_bytes()));
+                                    }
+                                    _ => {
+                                        eprintln!("Signing key expects 612 bytes");
+                                    }
+                                };
+                            }
+                            Err(err) => {
+                                eprintln!("Decode error of the signing key: {}", err);
+                            }
+                        }
+                    }
+                },
+            };
+        }
+        Cmd::GetPeriod => {
+            match config.file {
+                None => {
+                    eprintln!("No stdin or file was provided to read a signing key");
+                }
+                Some(sk_source) => match open_any(&sk_source) {
+                    Err(err) => {
+                        eprintln!("Failed to open {}: {}", sk_source, err);
+                    }
+                    Ok(sk_handle) => {
+                        let mut buffer = [0; 1224];
+                        let mut handle = sk_handle.take(1224);
+                        handle.read_exact(&mut buffer)?;
+                        match hex::decode(buffer) {
+                            Ok(bs) => {
+                                let mut sk_bytes = [0u8; 612];
+                                sk_bytes.copy_from_slice(&bs);
+                                match Sum6Kes::from_bytes(&mut sk_bytes) {
+                                    Ok(sk) => {
+                                        let period = sk.get_period();
+                                        print!("{}", period);
                                     }
                                     _ => {
                                         eprintln!("Signing key expects 612 bytes");
@@ -157,6 +195,14 @@ pub fn get_args() -> CLIResult<Config> {
                 .takes_value(false),
         )
         .arg(
+            Arg::with_name("get_period")
+                .short("t")
+                .long("period")
+                .help("Get period from a 612-byte signing key (stdin/file)")
+                .conflicts_with("derive_pk")
+                .takes_value(false),
+        )
+        .arg(
             Arg::with_name("file")
                 .value_name("FILE")
                 .help("Input file")
@@ -185,6 +231,13 @@ pub fn get_args() -> CLIResult<Config> {
     } else if matches.is_present("derive_pk") {
         Config {
             cmd: Cmd::DerivePk,
+            file: matches
+                .values_of_lossy("file")
+                .map(|mut vec| vec.pop().unwrap()),
+        }
+    } else if matches.is_present("get_period") {
+        Config {
+            cmd: Cmd::GetPeriod,
             file: matches
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),

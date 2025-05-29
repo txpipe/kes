@@ -117,3 +117,29 @@ fn deriving_pk_from_sk_is_deterministic() {
     // output is 64 character hex, meaning 32-byte payload
     assert_eq!(pk1.len(), 64)
 }
+
+#[test]
+fn get_period_from_sk_is_zero_in_the_beginning() {
+    let mut random_bytes = [0u8; 32];
+    let _ = fill(&mut random_bytes[..]);
+    let mut seed = NamedTempFile::new().unwrap();
+    write!(seed, "{}", hex::encode(&random_bytes)).unwrap();
+    let seed_file_name = (*seed.path()).display().to_string();
+    let is_zero = predicate::str::is_match("^0$").unwrap();
+
+    let sk = Command::cargo_bin(PRG)
+        .unwrap()
+        .args(["--derive_sk", &seed_file_name])
+        .assert()
+        .get_output()
+        .stdout
+        .clone();
+
+    Command::cargo_bin(PRG)
+        .unwrap()
+        .write_stdin(sk)
+        .arg("--period")
+        .assert()
+        .success()
+        .stdout(is_zero);
+}

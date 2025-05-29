@@ -104,3 +104,9 @@ $ echo -n 7fe54ac4449ef108b4717620b36085f300de9758decd6ad240b24b37d3f3dfc5 | car
 $ cargo run --quiet -- -k | cargo run --quiet -- -p  ; echo
 6da33c998de0f9dfc1aa32e197044f8b4482b2c9e74d162feeb3c32d57afb14b
 ```
+
+### How to get period from a 612-byte signing key (<strong>period</strong>)
+```console
+$ cargo run --quiet -- -k | cargo run --quiet -- -t ; echo
+0
+```
