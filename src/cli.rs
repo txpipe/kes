@@ -28,6 +28,9 @@ pub enum Cmd {
 
     /// Get period from 612 bytes signing key
     GetPeriod,
+
+    /// Sign msg from stdin using 612 bytes signing key read from file
+    SignMsg,
 }
 
 /// Config captured that determines what is invoked in CLI
@@ -153,6 +156,42 @@ pub fn run(config: Config) -> CLIResult<()> {
                 },
             };
         }
+        Cmd::SignMsg => {
+            match config.file {
+                None => {
+                    eprintln!("A secret key must be provided in a file");
+                }
+                Some(sk_source) => match open_both(&sk_source) {
+                    Err(err) => {
+                        eprintln!("{}: {}", sk_source, err);
+                    }
+                    Ok((mut msg_handle, sk_handle)) => {
+                        let mut buffer = [0; 1224];
+                        let mut handle = sk_handle.take(1224);
+                        handle.read_exact(&mut buffer)?;
+                        match hex::decode(buffer) {
+                            Ok(bs) => {
+                                let mut sk_bytes = [0u8; 612];
+                                sk_bytes.copy_from_slice(&bs);
+                                match Sum6Kes::from_bytes(&mut sk_bytes) {
+                                    Ok(sk) => {
+                                        let msg = msg_handle.fill_buf()?;
+                                        let signature = sk.sign(&msg);
+                                        print!("{}", hex::encode(signature.to_bytes()));
+                                    }
+                                    _ => {
+                                        eprintln!("Signing key expects 612 bytes");
+                                    }
+                                };
+                            }
+                            Err(err) => {
+                                eprintln!("Decode error of the secret key: {}", err);
+                            }
+                        }
+                    }
+                },
+            };
+        }
     }
     Ok(())
 }
@@ -203,6 +242,14 @@ pub fn get_args() -> CLIResult<Config> {
                 .takes_value(false),
         )
         .arg(
+            Arg::with_name("sign_msg")
+                .short("m")
+                .long("sign")
+                .help("Sign message (stdin) using a 612-byte signing key (file)")
+                .conflicts_with("get_period")
+                .takes_value(false),
+        )
+        .arg(
             Arg::with_name("file")
                 .value_name("FILE")
                 .help("Input file")
@@ -242,6 +289,13 @@ pub fn get_args() -> CLIResult<Config> {
                 .values_of_lossy("file")
                 .map(|mut vec| vec.pop().unwrap()),
         }
+    } else if matches.is_present("sign_msg") {
+        Config {
+            cmd: Cmd::SignMsg,
+            file: matches
+                .values_of_lossy("file")
+                .map(|mut vec| vec.pop().unwrap()),
+        }
     } else {
         panic!("wrong cmd")
     })
@@ -252,4 +306,11 @@ fn open_any(filename: &str) -> CLIResult<Box<dyn BufRead>> {
         "-" => Ok(Box::new(BufReader::new(io::stdin()))),
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
+}
+
+fn open_both(filename: &str) -> CLIResult<(Box<dyn BufRead>, Box<dyn BufRead>)> {
+    Ok((
+        Box::new(BufReader::new(io::stdin())),
+        Box::new(BufReader::new(File::open(filename)?)),
+    ))
 }
