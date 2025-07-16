@@ -1,8 +1,9 @@
 use assert_cmd::Command;
-use getrandom::fill;
 use predicates::prelude::*;
 use std::io::Write;
 use tempfile::NamedTempFile;
+
+use kes_summed_ed25519::cli::generate_crypto_secure_seed;
 
 const PRG: &str = "kes-summed-ed25519";
 
@@ -45,7 +46,7 @@ fn correct_length_output_generate_signing_key() {
 #[test]
 fn deriving_sk_from_seed_is_deterministic() {
     let mut random_bytes = [0u8; 32];
-    let _ = fill(&mut random_bytes[..]);
+    let _ = generate_crypto_secure_seed(&mut random_bytes[..]);
     let mut seed = NamedTempFile::new().unwrap();
     write!(seed, "{}", hex::encode(&random_bytes)).unwrap();
     let seed_file_name = (*seed.path()).display().to_string();
@@ -83,7 +84,7 @@ fn deriving_sk_from_seed_is_deterministic() {
 #[test]
 fn deriving_pk_from_sk_is_deterministic() {
     let mut random_bytes = [0u8; 612];
-    let _ = fill(&mut random_bytes[..]);
+    let _ = generate_crypto_secure_seed(&mut random_bytes[..]);
     let mut sk = NamedTempFile::new().unwrap();
     write!(sk, "{}", hex::encode(&random_bytes)).unwrap();
     let sk_file_name = (*sk.path()).display().to_string();
@@ -121,7 +122,7 @@ fn deriving_pk_from_sk_is_deterministic() {
 #[test]
 fn get_period_from_sk_is_zero_in_the_beginning() {
     let mut random_bytes = [0u8; 32];
-    let _ = fill(&mut random_bytes[..]);
+    let _ = generate_crypto_secure_seed(&mut random_bytes[..]);
     let mut seed = NamedTempFile::new().unwrap();
     write!(seed, "{}", hex::encode(&random_bytes)).unwrap();
     let seed_file_name = (*seed.path()).display().to_string();
@@ -147,7 +148,7 @@ fn get_period_from_sk_is_zero_in_the_beginning() {
 #[test]
 fn sign_message_and_verify_the_resultant_signature() {
     let mut random_bytes = [0u8; 32];
-    let _ = fill(&mut random_bytes[..]);
+    let _ = generate_crypto_secure_seed(&mut random_bytes[..]);
     let mut seed_file = NamedTempFile::new().unwrap();
     write!(seed_file, "{}", hex::encode(&random_bytes)).unwrap();
     let seed_file_name = (*seed_file.path()).display().to_string();

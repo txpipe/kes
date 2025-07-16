@@ -5,6 +5,10 @@ use crate::kes::{Sum6Kes, Sum6KesSig};
 use crate::traits::{KesSig, KesSk};
 
 use clap::{App, Arg};
+use rand::RngCore;
+use rand::SeedableRng;
+use rand::TryRngCore;
+use rand_chacha::ChaCha20Rng;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read};
@@ -51,18 +55,24 @@ pub struct Config {
     period: Option<u32>,
 }
 
+/// Generate random array of bytes using cryptographically secure random number generator
+pub fn generate_crypto_secure_seed(seed_bytes: &mut [u8]) {
+    let mut rng = ChaCha20Rng::from_rng(&mut rand::rng()).unwrap_err();
+    rng.fill_bytes(seed_bytes);
+}
+
 /// Determines and invokes Sum6Kes functions based on the parsed config
 pub fn run(config: Config) -> CLIResult<()> {
     match config.cmd {
         Cmd::GenerateSeed => {
             let mut seed_bytes = [0u8; 32];
-            getrandom::fill(&mut seed_bytes)?;
+            generate_crypto_secure_seed(&mut seed_bytes);
             print!("{}", hex::encode(seed_bytes));
         }
         Cmd::GenerateSk => {
             let mut key_bytes = [0u8; Sum6Kes::SIZE + 4];
             let mut seed_bytes = [0u8; 32];
-            getrandom::fill(&mut seed_bytes)?;
+            generate_crypto_secure_seed(&mut seed_bytes);
             let (sk, _pk) = Sum6Kes::keygen(&mut key_bytes, &mut seed_bytes);
             let mut sk_bytes = [0u8; Sum6Kes::SIZE + 4];
             sk_bytes.copy_from_slice(sk.as_bytes());
