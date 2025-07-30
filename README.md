@@ -33,7 +33,7 @@ fn main() {
 }
 ```
 
-Cardano uses currently **Sum6Kes**.
+**Note** Cardano uses currently **Sum6Kes**.
 
 ## Command-Line
 
@@ -145,8 +145,10 @@ size. We provide test vectors generated using Cardano's code to ensure that futu
 library will not lose compatibility with Cardano. These test vectors can be found in `./tests/data`,
 and the tests can be found in `./tests/interoperability.rs`.
 
-**Note**: secret keys of this crate are not compatible with KES keys as they are used in the
-[cardano node](https://github.com/input-output-hk/cardano-node). In this crate we include the
+## Interoperability with cardano-node and cardano-cli
+
+Secret keys of this crate are not compatible with KES keys as they are used in the
+[cardano node](https://github.com/IntersectMBO/cardano-node). In this crate we include the
 period of the KES secret key as part of its structure, while the cardano implementation does not.
 This decision is motivated by two reasons:
 * It considerably simplifies the API and makes it more intuitive to use. Moreover, the period is
@@ -159,9 +161,57 @@ This decision is motivated by two reasons:
   remove the last 4 bytes from the serialised signature). An example of such a procedure can be found
   in the [interoperability](./tests/interoperability.rs) tests of this crate.
 
-### Previous versions of the code
+Taking all the remarks above here is how we can seamlessly use the command line to use with
+[cardano cli](https://github.com/IntersectMBO/cardano-cli)
+
+```console
+$ cardano-cli --version
+cardano-cli 10.11.1.0 - linux-x86_64 - ghc-9.6
+
+# Creating example KES keys, two files are created : kes.skey and kes.vkey
+# We also have crfa.kes.counter which stores current period
+$ cardano-cli conway node key-gen-KES --verification-key-file kes.vkey --signing-key-file kes.skey --key-output-bech32
+$ cat kes.skey
+kes_sk1emm33cuyf0hczrf4wxzhcfc2maa7ujmelu4g6kmjecmsx8tg3sw8jnhcmqj0vfvv37g2nhamalmaa8zyue4jl49hjupwzy08jpftjhpu3w2zdc823z6ns768l7xltxjd5cv6w5z34r6hmp6dtupq4nk6re6pxly93v6q5v0adpk5lelv0hyrr8wzn6u56an5qqqeh7nctav56r3gpvr4m9cc4f80g79jvvuclgvw3ltwst0nrf98p925wusl0a0cpc557uuhnv0k3dyrdd6fkgdwfymgraq0ezmlyjned2j9qfhpqljjzcmhzlpcazwknku3sae46kek7zf3gmnd7qyusd8c4yu2xtja537k7t0k4m9zc56ds6lsp6lfm7ggqwvec77gudqlp7lmx8j7tdxz0vdj9gjn59m88hy23pzsslldkmv6d4t96vksjr3krggzy3pvw69gs8rl2ef4mgjuv7njwsy8dpsjxn6e0dncfzffqdthch03ruktw4xn65ql3rarlyhdj6w5ulxtq9mrdvcy9rhqkwumyqfuzcpnz2gmr3fnd0yqcluycnrfx47r7tfps0ulkl0tgruf9rugtmy8x7crhterw0ry33g2qxxarr6q6vnenl9tx6wr7cfy0fe2h5xsqcn579ql29c337ndaj2xff398707wj7st3nat3ftl6e3p3ypjzpldrlwzfpyta27gwvvv80r7pe8rn7pmvly8h0dlgy7t4a0u4lt7hxa2kpeuet0hgdyest73wj57sflwxrnmsgd36pfelphqhftz5tnr6klhdj6qtffyhhqe0h3l2c646hlgawdxwhhy03xfsj7trt7sms7qfy2xd4a0kqetfrjxa7x3vxnrsx4sftgm3yjwj0tmtmgu5846w8fc0x07ya5w826mr2jphe7efqykpmaal4xemhf82s35wzhql3ygja8npjtxaa2nyykga7zl4y
+$ cat kes.vkey
+kes_vk1ks9vm6c736u4xx6g25zfvcw5xzhewtvdctl858qn3zemzhp03n2s8empqg
+$ cat crfa.kes.counter
+000
+
+# Now having kes.skey and period (stored here as decimal) let's create skey (hex-decoded key with appended 32-byte period)
+$ echo "0" | printf '%08X\n' $(</dev/stdin)
+00000000
+$ cat kes.skey | bech32 | echo -n $(</dev/stdin) > skey
+$ echo "0" | printf '%08X\n' $(</dev/stdin) >> skey
+$ cat skey
+cef718e3844bef810d3571857c270adf7bee4b79ff2a8d5b72ce37031d688c1c794ef8d824f6258c8f90a9dfbbeff7de9c44e66b2fd4b79702e111e79052b95c3c8b9426e0ea88b5387b47ff8df59a4da619a75051a8f57d874d5f020aceda1e74137c858b340a31fd686d4fe7ec7dc8319dc29eb94d767400019bfa785f594d0e280b075d9718aa4ef478b263398fa18e8fd6e82df31a4a7095547721f7f5f80e294f73979b1f68b4836b749b21ae493681f40fc8b7f24a796aa45026e107e521637717c38e89d69db9187735d5b36f093146e6df009c834f8a938a32e5da47d6f2df6aeca2c534d86bf00ebe9df90803999c7bc8e341f0fbfb31e5e5b4c27b1b22a253a17673dc8a8845087fedb6d9a6d565d32d090e361a1022442c768a881c7f56535da25c67a72740876861234f597b6784892903577c5df11f2cb754d3d501f88fa3f92ed969d4e7ccb017636b30428ee0b3b9b2013c160331291b1c5336bc80c7f84c4c69357c3f2d2183f9fb7deb40f8928f885ec8737b03baf2373c648c50a018dd18f40d32799fcab369c3f61247a72abd0d006274f141f517118fa6dec9464a6253f9fe74bd05c67d5c52bfeb310c4819083f68fee124245f55e4398c61de3f07271cfc1db3e43ddedfa09e5d7afe57ebf5cdd55839e656fba1a4cc17e8ba54f413f71873dc10d8e829cfc3705d2b151731eadfbb65a02d2925ee0cbef1fab1aaeaff475cd33af723e264c25e58d7e86e1e0248a336bd7d8195a472377c68b0d31c0d582568dc492749ebdaf68e50f5d38e9c3ccff13b471d5ad8d520df3eca404b077defea6ceee93aa11a385707e2444ba79864b377aa99096400000000
+$ Having that we can recreate kes.vkey
+$ cargo run --quiet -- --derive_pk skey | bech32 kes_vk
+kes_vk1ks9vm6c736u4xx6g25zfvcw5xzhewtvdctl858qn3zemzhp03n2s8empqg
+
+# Updating the key
+$ cargo run --quiet -- --update_sk skey > skey1
+$ cat skey1
+794ef8d824f6258c8f90a9dfbbeff7de9c44e66b2fd4b79702e111e79052b95c00000000000000000000000000000000000000000000000000000000000000003c8b9426e0ea88b5387b47ff8df59a4da619a75051a8f57d874d5f020aceda1e74137c858b340a31fd686d4fe7ec7dc8319dc29eb94d767400019bfa785f594d0e280b075d9718aa4ef478b263398fa18e8fd6e82df31a4a7095547721f7f5f80e294f73979b1f68b4836b749b21ae493681f40fc8b7f24a796aa45026e107e521637717c38e89d69db9187735d5b36f093146e6df009c834f8a938a32e5da47d6f2df6aeca2c534d86bf00ebe9df90803999c7bc8e341f0fbfb31e5e5b4c27b1b22a253a17673dc8a8845087fedb6d9a6d565d32d090e361a1022442c768a881c7f56535da25c67a72740876861234f597b6784892903577c5df11f2cb754d3d501f88fa3f92ed969d4e7ccb017636b30428ee0b3b9b2013c160331291b1c5336bc80c7f84c4c69357c3f2d2183f9fb7deb40f8928f885ec8737b03baf2373c648c50a018dd18f40d32799fcab369c3f61247a72abd0d006274f141f517118fa6dec9464a6253f9fe74bd05c67d5c52bfeb310c4819083f68fee124245f55e4398c61de3f07271cfc1db3e43ddedfa09e5d7afe57ebf5cdd55839e656fba1a4cc17e8ba54f413f71873dc10d8e829cfc3705d2b151731eadfbb65a02d2925ee0cbef1fab1aaeaff475cd33af723e264c25e58d7e86e1e0248a336bd7d8195a472377c68b0d31c0d582568dc492749ebdaf68e50f5d38e9c3ccff13b471d5ad8d520df3eca404b077defea6ceee93aa11a385707e2444ba79864b377aa99096400000001
+# kes.skey is skey1 without the last 4 bytes, i.e.,
+$ cat skey1 | head -c -8 | bech32 kes_sk > kes.skey1
+$ cat kes.skey1
+kes_sk109803kpy7cjcerus480mhmlhm6wyfent9l2t09czuyg70yzjh9wqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpu3w2zdc823z6ns768l7xltxjd5cv6w5z34r6hmp6dtupq4nk6re6pxly93v6q5v0adpk5lelv0hyrr8wzn6u56an5qqqeh7nctav56r3gpvr4m9cc4f80g79jvvuclgvw3ltwst0nrf98p925wusl0a0cpc557uuhnv0k3dyrdd6fkgdwfymgraq0ezmlyjned2j9qfhpqljjzcmhzlpcazwknku3sae46kek7zf3gmnd7qyusd8c4yu2xtja537k7t0k4m9zc56ds6lsp6lfm7ggqwvec77gudqlp7lmx8j7tdxz0vdj9gjn59m88hy23pzsslldkmv6d4t96vksjr3krggzy3pvw69gs8rl2ef4mgjuv7njwsy8dpsjxn6e0dncfzffqdthch03ruktw4xn65ql3rarlyhdj6w5ulxtq9mrdvcy9rhqkwumyqfuzcpnz2gmr3fnd0yqcluycnrfx47r7tfps0ulkl0tgruf9rugtmy8x7crhterw0ry33g2qxxarr6q6vnenl9tx6wr7cfy0fe2h5xsqcn579ql29c337ndaj2xff398707wj7st3nat3ftl6e3p3ypjzpldrlwzfpyta27gwvvv80r7pe8rn7pmvly8h0dlgy7t4a0u4lt7hxa2kpeuet0hgdyest73wj57sflwxrnmsgd36pfelphqhftz5tnr6klhdj6qtffyhhqe0h3l2c646hlgawdxwhhy03xfsj7trt7sms7qfy2xd4a0kqetfrjxa7x3vxnrsx4sftgm3yjwj0tmtmgu5846w8fc0x07ya5w826mr2jphe7efqykpmaal4xemhf82s35wzhql3ygja8npjtxaa2nyykgygustn
+# period counter now is incremented
+$ cat crfa.kes.counter
+001
+# kes verifiation key stays the same
+$ cargo run --quiet -- --derive_pk skey1 | bech32 kes_vk
+kes_vk1ks9vm6c736u4xx6g25zfvcw5xzhewtvdctl858qn3zemzhp03n2s8empqg
+
+# Please take notice that skeyN takes hex-decoded period and crfa.kes.counter is decimal number.
+$ echo "20" | printf '%08X\n' $(</dev/stdin)
+00000014
+```
+
+## Previous versions of the code
 This repo is a copy and modification of
-[kes-mmm-sumed25519](https://github.com/input-output-hk/kes-mmm-sumed25519). The old repo
+[kes-mmm-sumed25519](https://github.com/IntersectMBO/kes-mmm-sumed25519). The old repo
 remains unchanged for historical purposes.
 
 ## Disclaimer
