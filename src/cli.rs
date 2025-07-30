@@ -85,7 +85,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                 }
                 Some(seed_source) => match open_any(&seed_source) {
                     Err(err) => {
-                        eprintln!("Failed to open {}: {}", seed_source, err);
+                        eprintln!("Failed to open {seed_source}: {err}");
                     }
                     Ok(seed_handle) => {
                         let mut buffer = [0; 64];
@@ -100,7 +100,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 print!("{}", hex::encode(sk.as_bytes()));
                             }
                             Err(err) => {
-                                eprintln!("Decode error of the secret seed: {}", err);
+                                eprintln!("Decode error of the secret seed: {err}");
                             }
                         }
                     }
@@ -114,7 +114,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                 }
                 Some(sk_source) => match open_any(&sk_source) {
                     Err(err) => {
-                        eprintln!("Failed to open {}: {}", sk_source, err);
+                        eprintln!("Failed to open {sk_source}: {err}");
                     }
                     Ok(sk_handle) => {
                         let mut buffer = [0; 1224];
@@ -135,7 +135,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 };
                             }
                             Err(err) => {
-                                eprintln!("Decode error of the signing key: {}", err);
+                                eprintln!("Decode error of the signing key: {err}");
                             }
                         }
                     }
@@ -149,7 +149,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                 }
                 Some(sk_source) => match open_any(&sk_source) {
                     Err(err) => {
-                        eprintln!("Failed to open {}: {}", sk_source, err);
+                        eprintln!("Failed to open {sk_source}: {err}");
                     }
                     Ok(sk_handle) => {
                         let mut buffer = [0; 1224];
@@ -162,7 +162,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 match Sum6Kes::from_bytes(&mut sk_bytes) {
                                     Ok(sk) => {
                                         let period = sk.get_period();
-                                        print!("{}", period);
+                                        print!("{period}");
                                     }
                                     _ => {
                                         eprintln!("Signing key expects 612 bytes");
@@ -170,7 +170,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 };
                             }
                             Err(err) => {
-                                eprintln!("Decode error of the signing key: {}", err);
+                                eprintln!("Decode error of the signing key: {err}");
                             }
                         }
                     }
@@ -184,7 +184,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                 }
                 Some(sk_source) => match open_both(&sk_source) {
                     Err(err) => {
-                        eprintln!("{}: {}", sk_source, err);
+                        eprintln!("{sk_source}: {err}");
                     }
                     Ok((mut msg_handle, sk_handle)) => {
                         let mut buffer = [0; 1224];
@@ -206,7 +206,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 };
                             }
                             Err(err) => {
-                                eprintln!("Decode error of the secret key: {}", err);
+                                eprintln!("Decode error of the secret key: {err}");
                             }
                         }
                     }
@@ -220,7 +220,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                 }
                 Some(pk_source) => match open_both(&pk_source) {
                     Err(err) => {
-                        eprintln!("{}: {}", pk_source, err);
+                        eprintln!("{pk_source}: {err}");
                     }
                     Ok((mut msg_handle, pk_handle)) => {
                         let mut buffer = [0; 64];
@@ -250,7 +250,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 }
                             }
                             Err(err) => {
-                                eprintln!("Decode error of the secret key: {}", err);
+                                eprintln!("Decode error of the secret key: {err}");
                             }
                         }
                     }
@@ -264,7 +264,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                 }
                 Some(sk_source) => match open_any(&sk_source) {
                     Err(err) => {
-                        eprintln!("Failed to open {}: {}", sk_source, err);
+                        eprintln!("Failed to open {sk_source}: {err}");
                     }
                     Ok(sk_handle) => {
                         let mut buffer = [0; 1224];
@@ -289,7 +289,7 @@ pub fn run(config: Config) -> CLIResult<()> {
                                 };
                             }
                             Err(err) => {
-                                eprintln!("Decode error of the signing key: {}", err);
+                                eprintln!("Decode error of the signing key: {err}");
                             }
                         }
                     }
