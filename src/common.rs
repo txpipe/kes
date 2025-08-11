@@ -176,3 +176,11 @@ pub fn open_any(filename: &str) -> CLIResult<Box<dyn BufRead>> {
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
+
+///Opens both stdin and a file from a given filepath
+pub fn open_both(filename: &str) -> CLIResult<(Box<dyn BufRead>, Box<dyn BufRead>)> {
+    Ok((
+        Box::new(BufReader::new(io::stdin())),
+        Box::new(BufReader::new(File::open(filename)?)),
+    ))
+}

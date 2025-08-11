@@ -31,6 +31,9 @@ pub enum Command {
 
     /// Get period from 612 bytes signing key
     Period(cmd::period::Args),
+
+    /// Sign msg from stdin using 612 bytes signing key read from file
+    Sign(cmd::sign::Args),
 }
 
 #[derive(Debug, Parser)]
@@ -51,6 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Command::DeriveSk(args) => cmd::derive_sk::run(args),
         Command::DerivePk(args) => cmd::derive_pk::run(args),
         Command::Period(args) => cmd::period::run(args),
+        Command::Sign(args) => cmd::sign::run(args),
     };
     result
 }
