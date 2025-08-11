@@ -34,6 +34,9 @@ pub enum Command {
 
     /// Sign msg from stdin using 612 bytes signing key read from file
     Sign(cmd::sign::Args),
+
+    /// Verify, using public key read from file, that msg read from stdin was signed by the corresponding signing key and resulted in the signature included as argument
+    Verify(cmd::verify::Args),
 }
 
 #[derive(Debug, Parser)]
@@ -55,6 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Command::DerivePk(args) => cmd::derive_pk::run(args),
         Command::Period(args) => cmd::period::run(args),
         Command::Sign(args) => cmd::sign::run(args),
+        Command::Verify(args) => cmd::verify::run(args),
     };
     result
 }

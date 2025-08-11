@@ -184,3 +184,15 @@ pub fn open_both(filename: &str) -> CLIResult<(Box<dyn BufRead>, Box<dyn BufRead
         Box::new(BufReader::new(File::open(filename)?)),
     ))
 }
+
+///Opens both stdin and two files from given filepaths
+pub fn open_three(
+    filename1: &str,
+    filename2: &str,
+) -> CLIResult<(Box<dyn BufRead>, Box<dyn BufRead>, Box<dyn BufRead>)> {
+    Ok((
+        Box::new(BufReader::new(io::stdin())),
+        Box::new(BufReader::new(File::open(filename1)?)),
+        Box::new(BufReader::new(File::open(filename2)?)),
+    ))
+}
