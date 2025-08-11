@@ -37,6 +37,9 @@ pub enum Command {
 
     /// Verify, using public key read from file, that msg read from stdin was signed by the corresponding signing key and resulted in the signature included as argument
     Verify(cmd::verify::Args),
+
+    /// Increment period for a 612 bytes signing key which result in the updated signing key
+    Update(cmd::update::Args),
 }
 
 #[derive(Debug, Parser)]
@@ -59,6 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Command::Period(args) => cmd::period::run(args),
         Command::Sign(args) => cmd::sign::run(args),
         Command::Verify(args) => cmd::verify::run(args),
+        Command::Update(args) => cmd::update::run(args),
     };
     result
 }
