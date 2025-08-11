@@ -5,7 +5,7 @@ use tempfile::NamedTempFile;
 
 use kes_summed_ed25519::cli::generate_crypto_secure_seed;
 
-const PRG: &str = "kes-summed-ed25519";
+const PRG: &str = env!("CARGO_PKG_NAME");
 
 #[test]
 fn correct_output_help_arg() {
@@ -19,7 +19,7 @@ fn correct_output_help_arg() {
 #[test]
 fn correct_output_version_arg() {
     let mut cmd = Command::cargo_bin(PRG).unwrap();
-    let ver = "kes-summed-ed25519 0.1.0";
+    let ver = PRG.to_owned() + " " + env!("CARGO_PKG_VERSION");
     cmd.arg("--version")
         .assert()
         .success()

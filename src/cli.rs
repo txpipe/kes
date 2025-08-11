@@ -303,7 +303,7 @@ pub fn run(config: Config) -> CLIResult<()> {
 /// Parses line entered by user into config
 pub fn get_args() -> CLIResult<Config> {
     let matches = App::new("kes-summed-ed25519")
-        .version("0.1.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("HAL Team <hal@cardanofoundation.org>")
         .about("Rust KES")
         .arg(
