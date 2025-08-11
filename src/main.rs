@@ -1,8 +1,39 @@
-use kes_summed_ed25519::cli::{get_args, run};
+//use kes_summed_ed25519::cli::{get_args, run};
+
+//fn main() {
+//    if let Err(e) = get_args().and_then(run) {
+//        eprintln!("{e}");
+//        std::process::exit(1);
+//    }
+//}
+
+//! CLI implementation using Sum6Kes implementation of KES
+
+use clap::{Parser, Subcommand};
+
+mod cmd;
+
+/// CLI commands available
+#[derive(Debug, Subcommand)]
+pub enum Command {
+    /// Generates 32 bytes secret seed
+    GenerateSeed,
+}
+
+#[derive(Debug, Parser)]
+#[clap(name = "Cardano compliant Sum6 KES")]
+#[clap(bin_name = "kes")]
+#[clap(author, version, about, long_about = None)]
+pub struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
 
 fn main() {
-    if let Err(e) = get_args().and_then(run) {
-        eprintln!("{e}");
-        std::process::exit(1);
-    }
+    let args = Cli::parse();
+
+    let result = match args.command {
+        Command::GenerateSeed => cmd::generate_seed::run(),
+    };
+    result
 }

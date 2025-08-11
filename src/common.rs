@@ -3,6 +3,10 @@ use crate::errors::Error;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use ed25519_dalek as ed25519;
+use rand::RngCore;
+use rand::SeedableRng;
+use rand::TryRngCore;
+use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "serde_enabled")]
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -151,4 +155,10 @@ impl fmt::Display for Depth {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
+}
+
+/// Generate random array of bytes using cryptographically secure random number generator
+pub fn generate_crypto_secure_seed(seed_bytes: &mut [u8]) {
+    let mut rng = ChaCha20Rng::from_rng(&mut rand::rng()).unwrap_err();
+    rng.fill_bytes(seed_bytes);
 }
