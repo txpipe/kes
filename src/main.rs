@@ -18,6 +18,9 @@ mod cmd;
 pub enum Command {
     /// Generates 32 bytes secret seed
     GenerateSeed,
+
+    /// Generates 612 bytes signing key of Sum6Kes
+    GenerateSk,
 }
 
 #[derive(Debug, Parser)]
@@ -34,6 +37,7 @@ fn main() {
 
     let result = match args.command {
         Command::GenerateSeed => cmd::generate_seed::run(),
+        Command::GenerateSk => cmd::generate_sk::run(),
     };
     result
 }
