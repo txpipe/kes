@@ -28,6 +28,9 @@ pub enum Command {
 
     /// Derives 32 bytes public key from 612 bytes signing key
     DerivePk(cmd::derive_pk::Args),
+
+    /// Get period from 612 bytes signing key
+    Period(cmd::period::Args),
 }
 
 #[derive(Debug, Parser)]
@@ -47,6 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Command::GenerateSk => cmd::generate_sk::run(),
         Command::DeriveSk(args) => cmd::derive_sk::run(args),
         Command::DerivePk(args) => cmd::derive_pk::run(args),
+        Command::Period(args) => cmd::period::run(args),
     };
     result
 }

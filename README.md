@@ -84,7 +84,8 @@ $ echo -n 7fe54ac4449ef108b4717620b36085f300de9758decd6ad240b24b37d3f3dfc5 | car
 
 ### How to get period from a 612-byte signing key (<strong>period</strong>)
 ```console
-$ cargo run --quiet -- --generate_sk | cargo run --quiet -- --get_period ; echo
+$ echo -n 7fe54ac4449ef108b4717620b36085f300de9758decd6ad240b24b37d3f3dfc5 | cargo run --quiet -- derive-sk --file - > sk
+$ cargo run --quiet -- period --file sk ;echo
 0
 ```
 
