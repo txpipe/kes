@@ -10,7 +10,10 @@ use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "serde_enabled")]
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
+use std::error::Error as AnyError;
 use std::fmt;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 
 /// ED25519 secret key size
 pub const INDIVIDUAL_SECRET_SIZE: usize = 32;
@@ -161,4 +164,15 @@ impl fmt::Display for Depth {
 pub fn generate_crypto_secure_seed(seed_bytes: &mut [u8]) {
     let mut rng = ChaCha20Rng::from_rng(&mut rand::rng()).unwrap_err();
     rng.fill_bytes(seed_bytes);
+}
+
+type GenericError = Box<dyn AnyError + Send + Sync + 'static>;
+type CLIResult<T> = Result<T, GenericError>;
+
+///Opens stdin if called with '-', otherwise tries to open file given a filepath
+pub fn open_any(filename: &str) -> CLIResult<Box<dyn BufRead>> {
+    match filename {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+    }
 }

@@ -10,6 +10,7 @@
 //! CLI implementation using Sum6Kes implementation of KES
 
 use clap::{Parser, Subcommand};
+use std::error::Error;
 
 mod cmd;
 
@@ -21,6 +22,9 @@ pub enum Command {
 
     /// Generates 612 bytes signing key of Sum6Kes
     GenerateSk,
+
+    /// Derives 612 bytes signing key of Sum6Kes from 32 bytes seed
+    DeriveSk(cmd::derive_sk::Args),
 }
 
 #[derive(Debug, Parser)]
@@ -32,12 +36,13 @@ pub struct Cli {
     command: Command,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
     let result = match args.command {
         Command::GenerateSeed => cmd::generate_seed::run(),
         Command::GenerateSk => cmd::generate_sk::run(),
+        Command::DeriveSk(args) => cmd::derive_sk::run(args),
     };
     result
 }
