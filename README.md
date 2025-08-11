@@ -74,8 +74,12 @@ $ cargo run --quiet -- derive-sk --file seed; echo
 ### How to derive a 32-byte public key from a 612-byte signing key (<strong>pk.pub</strong>)
 
 ```console
-$ cargo run --quiet -- --generate_sk | cargo run --quiet -- --derive_pk  ; echo
-6da33c998de0f9dfc1aa32e197044f8b4482b2c9e74d162feeb3c32d57afb14b
+$ echo -n 7fe54ac4449ef108b4717620b36085f300de9758decd6ad240b24b37d3f3dfc5 | cargo run --quiet -- derive-sk --file - > sk
+$ cargo run --quiet -- derive-pk --file sk
+4b31d9f3147ed2407b723e3903e33be5bdb0f33486a81684aeb2537b23c4cf2a
+
+$ echo -n 7fe54ac4449ef108b4717620b36085f300de9758decd6ad240b24b37d3f3dfc5 | cargo run --quiet -- derive-sk --file - | cargo run --quiet -- derive-pk --file -
+4b31d9f3147ed2407b723e3903e33be5bdb0f33486a81684aeb2537b23c4cf2a
 ```
 
 ### How to get period from a 612-byte signing key (<strong>period</strong>)

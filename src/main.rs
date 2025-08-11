@@ -25,6 +25,9 @@ pub enum Command {
 
     /// Derives 612 bytes signing key of Sum6Kes from 32 bytes seed
     DeriveSk(cmd::derive_sk::Args),
+
+    /// Derives 32 bytes public key from 612 bytes signing key
+    DerivePk(cmd::derive_pk::Args),
 }
 
 #[derive(Debug, Parser)]
@@ -43,6 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Command::GenerateSeed => cmd::generate_seed::run(),
         Command::GenerateSk => cmd::generate_sk::run(),
         Command::DeriveSk(args) => cmd::derive_sk::run(args),
+        Command::DerivePk(args) => cmd::derive_pk::run(args),
     };
     result
 }
