@@ -3,7 +3,7 @@ use predicates::prelude::*;
 use std::io::Write;
 use tempfile::NamedTempFile;
 
-use kes_summed_ed25519::cli::generate_crypto_secure_seed;
+use kes_summed_ed25519::common::generate_crypto_secure_seed;
 
 const PRG: &str = env!("CARGO_PKG_NAME");
 
@@ -13,7 +13,7 @@ fn correct_output_help_arg() {
     cmd.arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("USAGE"));
+        .stdout(predicate::str::contains("Usage"));
 }
 
 #[test]
@@ -35,12 +35,12 @@ fn hex_length_check(option: &str, len: i32) {
 
 #[test]
 fn correct_length_output_generate_seed() {
-    hex_length_check("--generate_seed", 32)
+    hex_length_check("generate-seed", 32)
 }
 
 #[test]
 fn correct_length_output_generate_signing_key() {
-    hex_length_check("--generate_sk", 612)
+    hex_length_check("generate-sk", 612)
 }
 
 #[test]
@@ -53,14 +53,14 @@ fn deriving_sk_from_seed_is_deterministic() {
 
     let sk1 = Command::cargo_bin(PRG)
         .unwrap()
-        .args(["--derive_sk", &seed_file_name])
+        .args(["derive-sk", "-f", &seed_file_name])
         .assert()
         .get_output()
         .stdout
         .clone();
     let sk2 = Command::cargo_bin(PRG)
         .unwrap()
-        .args(["--derive_sk", &seed_file_name])
+        .args(["derive-sk", "-f", &seed_file_name])
         .assert()
         .get_output()
         .stdout
@@ -68,7 +68,7 @@ fn deriving_sk_from_seed_is_deterministic() {
     let sk3 = Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(hex::encode(&random_bytes))
-        .arg("--derive_sk")
+        .args(["derive-sk", "-f", "-"])
         .assert()
         .get_output()
         .stdout
@@ -91,14 +91,14 @@ fn deriving_pk_from_sk_is_deterministic() {
 
     let pk1 = Command::cargo_bin(PRG)
         .unwrap()
-        .args(["--derive_pk", &sk_file_name])
+        .args(["derive-pk", "-f", &sk_file_name])
         .assert()
         .get_output()
         .stdout
         .clone();
     let pk2 = Command::cargo_bin(PRG)
         .unwrap()
-        .args(["--derive_pk", &sk_file_name])
+        .args(["derive-pk", "-f", &sk_file_name])
         .assert()
         .get_output()
         .stdout
@@ -106,7 +106,7 @@ fn deriving_pk_from_sk_is_deterministic() {
     let pk3 = Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(hex::encode(&random_bytes))
-        .arg("--derive_pk")
+        .args(["derive-pk", "-f", "-"])
         .assert()
         .get_output()
         .stdout
@@ -130,7 +130,7 @@ fn get_period_from_sk_is_zero_in_the_beginning() {
 
     let sk = Command::cargo_bin(PRG)
         .unwrap()
-        .args(["--derive_sk", &seed_file_name])
+        .args(["derive-sk", "-f", &seed_file_name])
         .assert()
         .get_output()
         .stdout
@@ -139,7 +139,7 @@ fn get_period_from_sk_is_zero_in_the_beginning() {
     Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(sk)
-        .arg("--get_period")
+        .args(["period", "-f", "-"])
         .assert()
         .success()
         .stdout(is_zero);
@@ -157,7 +157,7 @@ fn sign_message_and_verify_the_resultant_signature() {
 
     let sk = Command::cargo_bin(PRG)
         .unwrap()
-        .args(["--derive_sk", &seed_file_name])
+        .args(["derive-sk", "-f", &seed_file_name])
         .assert()
         .get_output()
         .stdout
@@ -171,7 +171,7 @@ fn sign_message_and_verify_the_resultant_signature() {
     let pk = Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(sk)
-        .arg("--derive_pk")
+        .args(["derive-pk", "-f", "-"])
         .assert()
         .get_output()
         .stdout
@@ -185,7 +185,7 @@ fn sign_message_and_verify_the_resultant_signature() {
     let sig = Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(msg.clone())
-        .args(["--sign", &sk_file_name])
+        .args(["sign", "-f", &sk_file_name])
         .assert()
         .get_output()
         .stdout
@@ -193,18 +193,29 @@ fn sign_message_and_verify_the_resultant_signature() {
 
     let printed_ok = predicate::str::is_match("^OK\n$").unwrap();
     let sig_str = String::from_utf8(sig.clone()).expect("should be bytes from sig");
+    let mut sig_file = NamedTempFile::new().unwrap();
+    write!(sig_file, "{}", sig_str).unwrap();
+    let sig_file_name = (*sig_file.path()).display().to_string();
 
     Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(msg.clone())
-        .args(["--verify", &sig_str, &pk_file_name])
+        .args([
+            "verify",
+            "-s",
+            &sig_file_name,
+            "-f",
+            &pk_file_name,
+            "-p",
+            "0",
+        ])
         .assert()
         .success()
         .stdout(printed_ok.clone());
 
     let sk1 = Command::cargo_bin(PRG)
         .unwrap()
-        .args(["--update_sk", &sk_file_name])
+        .args(["update", "-f", &sk_file_name])
         .assert()
         .get_output()
         .stdout
@@ -218,7 +229,7 @@ fn sign_message_and_verify_the_resultant_signature() {
     let sig1 = Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(msg.clone())
-        .args(["--sign", &sk1_file_name])
+        .args(["sign", "-f", &sk1_file_name])
         .assert()
         .get_output()
         .stdout
@@ -226,11 +237,22 @@ fn sign_message_and_verify_the_resultant_signature() {
 
     let printed_fail = predicate::str::is_match("^Fail\n$").unwrap();
     let sig1_str = String::from_utf8(sig1.clone()).expect("should be bytes from sig");
+    let mut sig1_file = NamedTempFile::new().unwrap();
+    write!(sig1_file, "{}", sig1_str).unwrap();
+    let sig1_file_name = (*sig1_file.path()).display().to_string();
 
     Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(msg.clone())
-        .args(["--verify", &sig1_str, &pk_file_name])
+        .args([
+            "verify",
+            "-s",
+            &sig1_file_name,
+            "-f",
+            &pk_file_name,
+            "-p",
+            "0",
+        ])
         .assert()
         .success()
         .stdout(printed_fail);
@@ -238,7 +260,15 @@ fn sign_message_and_verify_the_resultant_signature() {
     Command::cargo_bin(PRG)
         .unwrap()
         .write_stdin(msg)
-        .args(["--verify", &sig1_str, &pk_file_name, "-p", "1"])
+        .args([
+            "verify",
+            "-s",
+            &sig1_file_name,
+            "-f",
+            &pk_file_name,
+            "-p",
+            "1",
+        ])
         .assert()
         .success()
         .stdout(printed_ok);

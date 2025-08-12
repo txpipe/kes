@@ -166,30 +166,28 @@ pub fn generate_crypto_secure_seed(seed_bytes: &mut [u8]) {
     rng.fill_bytes(seed_bytes);
 }
 
-type GenericError = Box<dyn AnyError + Send + Sync + 'static>;
-type CLIResult<T> = Result<T, GenericError>;
-
 ///Opens stdin if called with '-', otherwise tries to open file given a filepath
-pub fn open_any(filename: &str) -> CLIResult<Box<dyn BufRead>> {
+pub fn open_any(filename: &str) -> Result<Box<dyn BufRead>, Box<dyn AnyError>> {
     match filename {
         "-" => Ok(Box::new(BufReader::new(io::stdin()))),
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
 
+type TwoBufReads = (Box<dyn BufRead>, Box<dyn BufRead>);
+
 ///Opens both stdin and a file from a given filepath
-pub fn open_both(filename: &str) -> CLIResult<(Box<dyn BufRead>, Box<dyn BufRead>)> {
+pub fn open_both(filename: &str) -> Result<TwoBufReads, Box<dyn AnyError>> {
     Ok((
         Box::new(BufReader::new(io::stdin())),
         Box::new(BufReader::new(File::open(filename)?)),
     ))
 }
 
+type ThreeBufReads = (Box<dyn BufRead>, Box<dyn BufRead>, Box<dyn BufRead>);
+
 ///Opens both stdin and two files from given filepaths
-pub fn open_three(
-    filename1: &str,
-    filename2: &str,
-) -> CLIResult<(Box<dyn BufRead>, Box<dyn BufRead>, Box<dyn BufRead>)> {
+pub fn open_three(filename1: &str, filename2: &str) -> Result<ThreeBufReads, Box<dyn AnyError>> {
     Ok((
         Box::new(BufReader::new(io::stdin())),
         Box::new(BufReader::new(File::open(filename1)?)),

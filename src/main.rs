@@ -43,9 +43,12 @@ pub enum Command {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "Cardano compliant Sum6 KES")]
+#[clap(name = "kes-summed-ed25519")]
 #[clap(bin_name = "kes")]
-#[clap(author, version, about, long_about = None)]
+#[clap(author = "HAL Team <hal@cardanofoundation.org>")]
+#[clap(version=env!("CARGO_PKG_VERSION"))]
+#[clap(about = "Cardano complaint Rust KES library using Sum6")]
+#[clap(about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -54,7 +57,7 @@ pub struct Cli {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
-    let result = match args.command {
+    match args.command {
         Command::GenerateSeed => cmd::generate_seed::run(),
         Command::GenerateSk => cmd::generate_sk::run(),
         Command::DeriveSk(args) => cmd::derive_sk::run(args),
@@ -63,6 +66,5 @@ fn main() -> Result<(), Box<dyn Error>> {
         Command::Sign(args) => cmd::sign::run(args),
         Command::Verify(args) => cmd::verify::run(args),
         Command::Update(args) => cmd::update::run(args),
-    };
-    result
+    }
 }
