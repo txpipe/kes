@@ -3,10 +3,17 @@ use crate::errors::Error;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use ed25519_dalek as ed25519;
+use rand::RngCore;
+use rand::SeedableRng;
+use rand::TryRngCore;
+use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "serde_enabled")]
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
+use std::error::Error as AnyError;
 use std::fmt;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 
 /// ED25519 secret key size
 pub const INDIVIDUAL_SECRET_SIZE: usize = 32;
@@ -151,4 +158,39 @@ impl fmt::Display for Depth {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
+}
+
+/// Generate random array of bytes using cryptographically secure random number generator
+pub fn generate_crypto_secure_seed(seed_bytes: &mut [u8]) {
+    let mut rng = ChaCha20Rng::from_rng(&mut rand::rng()).unwrap_err();
+    rng.fill_bytes(seed_bytes);
+}
+
+///Opens stdin if called with '-', otherwise tries to open file given a filepath
+pub fn open_any(filename: &str) -> Result<Box<dyn BufRead>, Box<dyn AnyError>> {
+    match filename {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+    }
+}
+
+type TwoBufReads = (Box<dyn BufRead>, Box<dyn BufRead>);
+
+///Opens both stdin and a file from a given filepath
+pub fn open_both(filename: &str) -> Result<TwoBufReads, Box<dyn AnyError>> {
+    Ok((
+        Box::new(BufReader::new(io::stdin())),
+        Box::new(BufReader::new(File::open(filename)?)),
+    ))
+}
+
+type ThreeBufReads = (Box<dyn BufRead>, Box<dyn BufRead>, Box<dyn BufRead>);
+
+///Opens both stdin and two files from given filepaths
+pub fn open_three(filename1: &str, filename2: &str) -> Result<ThreeBufReads, Box<dyn AnyError>> {
+    Ok((
+        Box::new(BufReader::new(io::stdin())),
+        Box::new(BufReader::new(File::open(filename1)?)),
+        Box::new(BufReader::new(File::open(filename2)?)),
+    ))
 }
